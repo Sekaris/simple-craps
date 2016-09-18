@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Aw Craps</title>
+<meta charset="UTF-8">
+<style>
+body,button { font-family:georgia; }
+#container {display:flex; justify-content:center; align-items:baseline; align-content:stretch; margin:auto ; height:100%;}
+#result {font-size:350%;}
+#currentBet { font-size: 150%;}
+div {padding:10px;}
+</style>
+</head>
+<body>
+<script>
+
+// declare variables
+var roll1 = 0;
+var roll2 = 0;
+var rollSum = 0;
+var rollAgain = false;
+var text = "";
+var pass = true;
+var pointValue = 0;
+var money = 1000;
+var currentBet = 0;
+var passBet = undefined;
+
+// changes the text inside the display
+function printText(text){
+	console.log(text);
+	document.getElementById("displayText").innerHTML = (text); 
+}
+
+// generates dice values and calculates sum
+function rollDice(){
+	roll1 = Math.floor((Math.random() * 6) + 1);
+	roll2 = Math.floor((Math.random() * 6) + 1);
+	rollSum = roll1 + roll2;
+	text += "<p>You rolled a " + roll1 + " and " + roll2 + "." + '<br><span id="result">' + rollSum + '</span></p>';
+	console.log(text);
+	return rollSum;
+}
+
+function printRoll() {
+	for (i=0; i < roll1; i++){
+		text += "o";
+	}
+	text += "<br>";
+
+	for (i=0; i < roll2; i++){
+		text += "x";
+	}
+	text += "<br>";
+}
+
+
+// change the button action to start/restart the game
+function buttonRollDice(){
+	
+	document.getElementById("rollButton").setAttribute("onclick","startGame()");	
+	document.getElementById("rollButton").innerHTML = "Play Again";
+}
+
+// change the button to continue during the point phase
+function buttonRollAgain(){
+	//buttons = '<button type="button" onclick="pointPhase()">Roll Again</button>';
+	//document.getElementById("buttons").innerHTML = (buttons);
+	
+	document.getElementById("rollButton").setAttribute("onclick","pointPhase()");
+	document.getElementById("rollButton").innerHTML = "Roll Again";
+}
+
+// add amount to current bet
+function bet(amount){
+	money -= amount;
+	currentBet += amount;	
+	updateBalance();
+}
+
+// updates the balance based on the current bet
+function updateBalance() {
+	document.getElementById("balance").innerHTML = "Balance: $" + money;	
+	document.getElementById("currentBet").innerHTML = "Current Bet: $" + currentBet;
+	
+	if (currentBet > 0) {
+	document.getElementById("clearBet").disabled = false;	
+	document.getElementById("currentBet").style.color = "initial";
+	}
+	else {
+	document.getElementById("clearBet").disabled = true;
+	document.getElementById("currentBet").style.color = "lightgrey";
+	}
+}
+
+// resets the bet amount and button states
+function clearBet(){
+	money += currentBet;
+	currentBet = 0;
+	updateBalance();
+	
+	document.getElementById("dontPassButton").disabled = false;
+	document.getElementById("passButton").disabled = false;
+	document.getElementById("passBet").innerHTML = "Pass Bet: - ";
+	passBet = undefined;
+
+}
+
+// sets whether the player is betting on the pass line or don't pass line
+function setPass(passValue){
+	passBet = passValue;
+	if (passBet==1) {
+		document.getElementById("passBet").innerHTML = "Pass Bet: <span style='color:limegreen'>Pass</span>";
+		
+		document.getElementById("passButton").disabled = true;
+		document.getElementById("dontPassButton").disabled = false;
+	}
+	if (passBet==0) {
+		document.getElementById("passBet").innerHTML = "Pass Bet: <span style='color:red'>Don't Pass</span>";
+		
+		document.getElementById("passButton").disabled = false;
+		document.getElementById("dontPassButton").disabled = true;
+	}	
+	document.getElementById("clearBet").disabled = false;
+}
+
+// tells player if they won or lost money and shows replay button
+function testPass(){
+	if (currentBet == 0) {
+		text += "<p style='color:lightgrey;'>You didn't win (or lose) anything.</p>";
+	}
+	else if (pass == passBet) {
+		money = money + 2 * currentBet;				
+		text += '<p style="color:limegreen;" >You gained $' + currentBet + '.</p>';
+	}
+	else if (pass != passBet) {
+		//money = money - currentBet;
+		text += '<p style="color:red;">You lost $' + currentBet + '.</p>';
+	}
+	currentBet = 0;
+	updateBalance();
+	clearBet();
+	buttonRollDice();
+}
+
+// deactivates bet buttons after the point value has been established
+function deactivateBetting(){
+	//var buttonDiv = document.getElementById("betButtons");
+	document.querySelectorAll('#betButtons button').disabled = true;
+}
+
+// activates bet buttons after the game is decided
+function activateBetting(){
+	//var buttonDiv = document.getElementById("betButtons");
+	document.querySelectorAll('#betButtons button').disabled = false;
+}
+function startGame(){
+	updateBalance();
+	if (passBet == undefined || bet == 0) {
+		printText("Place Bet.");
+		document.getElementById("betButtons").style.backgroundColor = "lightyellow";
+	}
+	else {
+	comeOut();
+		document.getElementById("betButtons").style.backgroundColor = "initial";
+	}
+}
+function comeOut() {	
+	deactivateBetting();
+		
+	text = ("<p>--- Come Out Roll ---</p><p>");	
+	var comeOut = rollDice();
+	
+	//check if shooter wins
+	if (comeOut == 7 || comeOut == 11){
+		if (comeOut == 7) {
+			text += "A Natural.";
+		} else if (comeOut == 11){
+			text += "Yo-leven.";
+		}
+		
+		text += " Pass line wins!";
+		pass = true;
+		testPass(pass);
+	}		
+	
+	//check if shooter crapped out
+	else if (comeOut == 2 || comeOut == 3 || comeOut == 12){
+		if (comeOut == 2) {
+			text += "Snake eyes!";
+		} else if (comeOut == 3) {
+			text += "Ace deuce.";
+		} else if (comeOut == 12) {
+			text += "Box cars!";
+		}
+		text += " You crapped out.";
+		pass = false;
+		testPass(pass);
+		
+	}
+
+/*	if (comeOut == 7) {
+		text += "A Natural. Pass line wins!";
+		pass = true;
+	} else if (comeOut == 11){
+		text += "Yo-leven. Pass line wins!";
+		pass = true;
+	}		
+	else if (comeOut == 3) {
+		text += "Ace deuce. You crapped out.";
+	} else if (comeOut == 2) {
+		text += "Snake eyes! You crapped out.";
+	} else if (comeOut == 12) {
+		text += "Box cars! You crapped out.";
+	}
+	*/
+		
+	// else establish point value
+	else {	
+		deactivateBetting();
+		pointValue = comeOut;
+		text += "--- Point Set: " + pointValue + " ---</p><p>";
+		
+		buttonRollAgain();
+		
+	}
+	printText(text);
+}
+
+
+function pointPhase() {
+	text = "--- Point Set: " + pointValue + " ---</p><p>";
+	var rollAgain = true;
+	rollDice();
+	
+	if (rollSum == 3) {
+		text += "Ace deuce. ";
+	} else if (rollSum == 2) {
+		text += "Snake eyes! ";
+	} else if (rollSum == 12) {
+		text += "Box cars! ";
+	} 
+	
+	else if (rollSum % 2 == 0) {
+	// determines if an even roll is a hard or easy roll
+		if (roll1 == roll2) {
+			text += "Hard " + rollSum + ". ";
+		} else {
+			text += "Easy " + rollSum + ". ";
+		}	
+	}
+				
+	// pass line wins
+	if (rollSum == pointValue) {
+		text += "Pass line wins!";
+		pass = true;		
+		rollAgain = false;
+	}		
+	// pass line loses
+	else if (rollSum == 7) {
+		text += "Seven-out. Pass line loses."
+		pass = false;
+		rollAgain = false;
+	}
+	// other roll
+	else {
+		//text += "You rolled a " + rollSum + ".";
+		rollAgain = true;
+	}
+	
+	if (rollAgain == true) {
+		text += "Roll again. </p>"
+		buttonRollAgain();
+	}
+	else if (rollAgain == false) {
+		testPass(pass);
+		
+	}
+	
+	printText(text);
+}
+</script>
+<div id="container" style="">
+	<div style="flex-basis: 20em; text-align:center;">
+	<h1>Craps</h1>
+	<p id="displayText">It's your turn to shoot the dice.</p>
+	<p>	
+		<button type="button" id="rollButton" onclick="startGame()">Roll Dice</button>
+	</p>
+	</div>
+
+	<!-- <div style="flex-basis:30%;">
+	</div> -->
+
+	<div id="betButtons" style="flex-basis: 12em;">
+	<h2>Bets</h2>
+	<p id="passBet">Pass Bet: - </p>
+	<p>
+		<button type="button" id="passButton" onclick="setPass(1)">Pass</button>
+		<button type="button" id="dontPassButton" onclick="setPass(0)">Don't Pass</button>
+	</p>
+	<p id="currentBet">Current Bet: $0</p>
+	<p>
+		<button type="button" onclick="bet(1)">Bet $1</button>
+		<button type="button" onclick="bet(5)">Bet $5</button>
+		<button type="button" onclick="bet(25)">Bet $25</button>
+	</p>
+	<p> 
+		<button type="button" class="bet" onclick="clearBet()" id="clearBet" disabled="true">Clear Bet</button>
+	</p>
+	<p id="balance">Balance: $1000</p>
+	</div>
+</div>
+</body>
